@@ -120,3 +120,5 @@ plot(elev$date, elev$wind.sp, type='l')
 Some trends are that oftentimes for higher temperatures, the wind speed is lower. For example, on August 7, the wind speed has a low peak; the corresponding temperature is a high peak in the temperature time-series plot. Similarly, between August 22 and 27, the wind speeds are higher than other parts of the graph. Correspondingly, there are some low peaks of temperatures for dates between August 22 and 27. However, compared to the temperature graph where there are small moments of "plateauing," the wind speeds seem to have more variation in their observations. 
 
 
+
+
