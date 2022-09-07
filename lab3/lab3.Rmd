@@ -1,0 +1,60 @@
+---
+title: "Lab 3"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+```{r Read in data}
+library(tidyverse)
+library(data.table)
+
+download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", method="libcurl", timeout = 60)
+met <- data.table::fread("met_all.gz")
+
+```
+
+## Question 2
+
+```{r Dimensions, headers, footers}
+dim(met)
+head(met)
+tail(met)
+```
+There are 2377343 observations and 30 variables in this dataset. 
+
+## Question 3
+
+```{r Take a look at variables}
+str(met)
+
+```
+
+## Question 4
+```{r Take a look at key variables}
+table(met$year)
+table(met$day)
+table(met$hour)
+
+summary(met$temp)
+summary(met$elev)
+summary(met$wind.sp)
+
+met[met$elev==9999.0] <- NA
+summary(met$elev)
+
+# The highest elevation is 4113 meters.
+
+met <- met[temp>-40]
+met2 <- met[order(temp)]
+head(met2)
+
+```
+
+
