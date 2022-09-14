@@ -1,0 +1,61 @@
+---
+title: "PM566 Lab 4"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 1: Reading in data
+```{r}
+setwd("~/pm566/labs/lab4")
+if (!file.exists("../lab3/met_all.gz"))
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz",
+    destfile = "met_all.gz",
+    method   = "libcurl",
+    timeout  = 60
+    )
+met <- data.table::fread("../lab3/met_all.gz")
+```
+
+## Step 2: Prepare the data
+```{r}
+met = met[met$temp > -17, ]
+summary(met)
+
+```
+
+From the summary of the dataset, there are NA values in the dewpoint and windspeed variables, which we want to answer our question. There are also 9999 values in the elevation column which we also want to clean out. 
+
+
+```{r}
+dewpoint_na = is.na(met$dew.point)
+windspeed_na = is.na(met$wind.sp)
+elev_na = met$elev == 9999
+met = met[!dewpoint_na & !windspeed_na & !elev_na, ]
+
+# Double check to make sure all the NA values are cleaned out
+summary(met)
+
+met$date = as.Date(paste(met$year, met$month, met$day, sep = "-"), format = "%Y-%m-%d")
+met_filtered = met[lubridate::day(ymd(met$date)) >= 1 & lubridate::day(ymd(met$date)) <= 7, ]
+
+met_avg = met_filtered[, .(temp = mean(temp, na.rm = TRUE), 
+                 rh = mean(rh, na.rm = TRUE), 
+                 wind.sp = mean(wind.sp, na.rm = TRUE), 
+                 vis.dist = mean(vis.dist, na.rm = TRUE), 
+                 dew.point = mean(dew.point, na.rm = TRUE), 
+                 lat = mean(lat, na.rm = TRUE), 
+                 lon = mean(lon, na.rm = TRUE), 
+                 elev = mean(elev, na.rm = TRUE)
+), by = "USAFID"]
+
+
+```
+
+
+
