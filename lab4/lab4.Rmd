@@ -12,6 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Step 1: Reading in data
 ```{r}
 setwd("~/pm566/labs/lab4")
+library(tidyverse)
+library(data.table)
+library(lubridate)
+
 if (!file.exists("../lab3/met_all.gz"))
   download.file(
     url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz",
@@ -54,8 +58,78 @@ met_avg = met_filtered[, .(temp = mean(temp, na.rm = TRUE),
                  elev = mean(elev, na.rm = TRUE)
 ), by = "USAFID"]
 
+met_avg$region = ifelse(met_avg$lon > -98 & met_avg$lat > 39.71, "NE", 
+                ifelse(met_avg$lon <= -98 & met_avg$lat > 39.71, "NW", 
+                ifelse(met_avg$lon > -98 & met_avg$lat <= 39.71, "SE", 
+                "SW")))
+met_avg[, elev_cat := fifelse(elev > 252, "high", "low")]
+
+
 
 ```
+
+## Step 3: examine the wind speed and dew point temperature by region
+```{r}
+met_avg %>% ggplot() + geom_violin(mapping = aes(x = 1, y = wind.sp, color = region, fill = region), na.rm = TRUE) + facet_wrap(~ region, nrow = 1)
+met_avg %>% ggplot() + geom_violin(mapping = aes(x = 1, y = dew.point, color = region, fill = region), na.rm = TRUE) + facet_wrap(~ region, nrow = 1)
+
+
+```
+
+The wind speeds have similar distributions with similar minimums and maximums with the exception of NE, which has a larger range than the other regions. Furthermore, in the SE region, more values seem to be below the measure of center than the other regions. All regions' most frequent wind speeds seem to reflect the center of the data such that the plots are shaped almost like a top. On the other hand, the dew point temperatures by region have much more variability. The southeast region has the highest dew point temperatures, where as both northwest and southwest regions have larger ranges of dew point temperatures. For the northwest region in particular, there are two "nodes" where dew point temperatures around 9 and 17 degrees are very frequent. 
+
+## Step 4: geom_jitter and stat_smooth
+```{r}
+met_avg %>% ggplot() + geom_jitter(mapping = aes(x = wind.sp, y = dew.point, color = region), na.rm = TRUE) + 
+  stat_smooth(mapping = aes(x = wind.sp, y = dew.point), method = "lm") + 
+  facet_wrap(~ region) 
+
+```
+
+There is more variation with dew point temperatures in the western regions than in the eastern regions, although wind speed ranges seem similar across all four regions. The correlation between dew point temperature and wind speed in all regions look very close to zero, except for in the northwest region where a slight positive correlation between dew point temperature and wind speed can be seen. 
+
+## Step 5: geom_bar
+
+```{r}
+met_avg %>% ggplot() + geom_bar(mapping = aes(x = elev_cat, color = region, fill = region), position = "dodge",  na.rm = TRUE) + scale_fill_brewer(palette ="Set2") + xlab("Station elevation") + ylab("Frequency") + ggtitle("Frequency of Stations by Elevation")
+```
+
+There are many more low elevation stations in the southeast region where as there are more high elevation stations in the northwest region than low elevation stations. Similarly to the northwest region, there are more high elevation than low elevation stations in the southwest region, as well as the northeast region (though the difference in frequency is not as significant as the three other regions). 
+
+## Step 6: Using stat_summary
+```{r}
+met_avg %>% ggplot() + stat_summary(mapping = aes(x = region, y = dew.point), fun.data = mean_sdl, na.rm = TRUE) 
+
+met_avg %>% ggplot() + stat_summary(mapping = aes(x = region, y = dew.point), geom = "errorbar", fun.data = mean_sdl, na.rm = TRUE) 
+
+```
+The dew point temperature ranges for the western regions are much larger than the eastern regions, which suggests that standard errors in these regions are larger than the eastern regions. The dew point temperature means for the eastern regions are higher than the eastern regions than the western regions, with the southeast mean dew point temperature being the highest of the four regions. 
+
+## Step 7: Map showing spatial trend
+```{r}
+library(leaflet)
+rh.pal = colorNumeric(c('darkgreen', 'goldenrod', 'brown'), domain = met_avg$rh)
+top10_rh = met_avg[rank(-rh) <= 10 ]
+
+rh_map <- leaflet(met_avg) %>% 
+  addProviderTiles('CartoDB.Positron') %>% 
+  addCircles(
+    lat = ~lat, lng = ~lon,
+    label = ~paste0(rh), color = ~ rh.pal(rh),
+    opacity = 1, fillOpacity = 1, radius = 500
+    ) %>%
+  addLegend('bottomleft', pal=rh.pal, values=met_avg$rh,
+          title='Relative Humidity', opacity=1)
+
+rh_map
+```
+
+Generally, the further east in the United States, the more humid it is there. The coastlines usually have very high recorded humidities, where as less humid places are more inland. It seems like east and west directions determine humidity moreso than north and south. 
+
+
+
+
+
 
 
 
