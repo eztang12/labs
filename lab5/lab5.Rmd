@@ -1,0 +1,73 @@
+---
+title: "PM566 Lab 5"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+```{r}
+library(data.table)
+library(dplyr)
+library(dtplyr)
+
+```
+
+## Load in data
+```{r}
+if (!file.exists("../lab3/met_all.gz"))
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz",
+    destfile = "met_all.gz",
+    method   = "libcurl",
+    timeout  = 60
+    )
+met <- data.table::fread("~/pm566/labs/lab3/met_all.gz")
+
+stations <- fread("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv")
+stations[, USAF := as.integer(USAF)]
+
+stations[, USAF   := fifelse(USAF == 999999, NA_integer_, USAF)]
+stations[, CTRY   := fifelse(CTRY == "", NA_character_, CTRY)]
+stations[, STATE  := fifelse(STATE == "", NA_character_, STATE)]
+
+stations <- unique(stations[, list(USAF, CTRY, STATE)])
+
+stations <- stations[!is.na(USAF)]
+
+stations[, n := 1:.N, by = .(USAF)]
+stations <- stations[n == 1,][, n := NULL]
+```
+
+## Merging data
+```{r}
+met_filtered = met[temp > -17, ]
+merged_dat = merge(x = met_filtered, y = stations, by.x = "USAFID", by.y = "USAF", all.x = T, all.y = F) 
+
+
+```
+
+## Question 1
+```{r}
+station_averages = met_filtered[ , .(
+  temp = mean(temp, na.rm=T), 
+  wind.sp = mean(wind.sp, na.rm=T), 
+  atm.press = mean(atm.press, na.rm=T)
+), by=USAFID]
+
+statmedians = station_averages[ , .(
+  temp50 = median(temp, na.rm = T), 
+  windsp50 = median(wind.sp, na.rm=T), 
+  atmpress50 = median(atm.press, na.rm = T)
+)]
+
+station_averages[ , temp_dist50 := abs(temp - statmedians$temp50)][order(temp_dist50)]
+
+```
+Station 720458 is the station with the closest temperature to the median temperature. 
+
+
