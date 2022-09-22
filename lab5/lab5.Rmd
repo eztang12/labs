@@ -53,7 +53,7 @@ merged_dat = merge(x = met_filtered, y = stations, by.x = "USAFID", by.y = "USAF
 
 ## Question 1
 ```{r}
-station_averages = met_filtered[ , .(
+station_averages = merged_dat[ , .(
   temp = mean(temp, na.rm=T), 
   wind.sp = mean(wind.sp, na.rm=T), 
   atm.press = mean(atm.press, na.rm=T)
@@ -70,4 +70,44 @@ station_averages[ , temp_dist50 := abs(temp - statmedians$temp50)][order(temp_di
 ```
 Station 720458 is the station with the closest temperature to the median temperature. 
 
+We can do the same for the other variables.
+```{r}
+station_averages[ , windsp50 := abs(wind.sp - statmedians$windsp50)][order(windsp50)]
+station_averages[ , atmpress50 := abs(atm.press - statmedians$atmpress50)][order(atmpress50)]
+```
+Station 724066 has exactly the median wind speed. Station 722238 has the closest atmospheric pressure to the median atmospheric pressure. 
 
+## Question 2
+```{r}
+station_averages_state = merged_dat[ , .(
+  temp = mean(temp, na.rm=T), 
+  wind.sp = mean(wind.sp, na.rm=T), 
+  atm.press = mean(atm.press, na.rm=T)
+), by=.(USAFID, STATE)]
+
+statemeds = station_averages_state[ , .(
+  temp50 = median(temp, na.rm=T), 
+  windsp50 = median(wind.sp, na.rm=T), 
+  atmpress50 = median(atm.press, na.rm=T)
+), by=STATE]
+
+merged_state = statewide_merge = merge(x = station_averages_state, y = statemeds, by.x = "STATE", by.y = "STATE", all.x = T, all.y = F)
+
+merged_state[ , temp_dist50_state := abs(temp - statemeds$temp50)][order(temp_dist50_state)]
+merged_state[ , windsp50_state := abs(wind.sp - statemeds$windsp50)][order(windsp50_state)]
+merged_state[ , atmpress50_state := abs(atm.press - statemeds$atmpress50)][order(atmpress50_state)]
+
+```
+Missouri is the state with the closest temperature to the median. Wisconsin is the state with the closest wind speed to the median. Arkansas is the state with the closest atmospheric pressure to the median. 
+
+We want the Euclidean distance, so we can add these parameters together.
+```{r}
+merged_state = merged_state[, eucdist := temp_dist50_state^2 + windsp50_state^2]
+repstation = statewide_merge[, .(eucdist = min(eucdist, na.rm=T)), by=STATE]
+test = merge(x = merged_state, y = repstation, by.x = c("eucdist", "STATE"), by.y = c("eucdist", "STATE"), all.x = F, all.y = T)
+test
+
+
+```
+
+Looking at test, Virginia has the shortest Euclidean distance. 
