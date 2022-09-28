@@ -101,14 +101,26 @@ mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>%
 
 The most common word coming after patient is "was." The second most common word coming after patient is "is." It is important to note that the fourth most common word after patient is "tolerated," which tells us that many patients did not react badly to any treatments.
 
+We can do this for non-stop words.
 ```{r}
 mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>%
   separate(ngram, into = c("word1", "word2"), sep = " ") %>%
-  select(word1, word2) %>% filter(word2 == "patient") %>% count(word1, sort = T)
+  select(word1, word2) %>% filter(word1 == "patient") %>% 
+  anti_join(stop_words, by = c("word2" = "word")) %>% count(word2, sort = T)
+```
+The most common non-stop word is "tolerated," followed by "denies" and "underwent." 
+
+
+```{r}
+
+mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>%
+  separate(ngram, into = c("word1", "word2"), sep = " ") %>%
+  select(word1, word2) %>% filter(word2 == "patient") %>% 
+  anti_join(stop_words, by = c("word1" = "word")) %>% count(word1, sort = T)
 
 ```
 
-The most common word preceding "patient" by far is "the." History is also very common, which makes sense since physicians need to take patient histories. 
+The most common word that is not a stop word preceding "patient" is "history," which we've seen before. "Procedure" and "female" are also common.
 
 ## Step 6 and Step 7: Words Used Most per Specialty
 ```{r}
