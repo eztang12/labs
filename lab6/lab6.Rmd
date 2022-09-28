@@ -1,0 +1,125 @@
+---
+title: "Lab 6"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Download Data
+```{r}
+library(tidyverse)
+library(tidytext)
+
+setwd("~/pm566/labs/lab6/")
+if (!file.exists("mtsamples.csv"))
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/00_mtsamples/mtsamples.csv",
+    destfile = "mtsamples.csv",
+    method   = "libcurl",
+    timeout  = 60
+    )
+mtsamples <- read_csv("mtsamples.csv")
+
+```
+
+## Step 1
+```{r}
+mtsamples %>% count(medical_specialty, sort = TRUE)
+specialty = mtsamples %>% count(medical_specialty, sort = TRUE)
+nrow(specialty)
+
+specialty %>% top_n(10) %>% ggplot(aes(x = n, y = medical_specialty)) + geom_col()
+
+```
+
+There are 40 specialties, and they are not evenly distributed. It doesn't look like the specialties are overlapping.
+
+
+## Step 2: Tokenizing the words
+```{r}
+mtsamples %>% unnest_tokens(token, transcription) %>% count(token, sort=T) 
+mtsamples %>% unnest_tokens(token, transcription) %>% count(token, sort=T) %>% top_n(20)
+
+```
+
+The most common words are the, and, was, etc. The most common non-"stop" word is "patient," which appears 22065 times.  
+
+#### Visualization
+```{r}
+t20_tokens = mtsamples %>% unnest_tokens(token, transcription) %>% count(token, sort=T) %>% top_n(20)
+t20_tokens %>% ggplot(aes(x = n, y = token)) + geom_col()
+
+```
+This makes sense, since the most common words found are generic and can be used in any scenario. "Patient" being a common word also makes sense since this is a transcription of patient medical records. Since "patient" is the most non-stop word in the top 20, this doesn't really tell us much since we already know this data is about patients.
+
+## Step 3: Redo Visualization but Remove Stopwords
+```{r}
+library(forcats)
+all_token = mtsamples %>% unnest_tokens(token, transcription) %>% count(token, sort=T)
+token_filtered = all_token %>% anti_join(stop_words, by = c("token" = "word"))
+token_filtered %>% top_n(20) %>% ggplot(aes(x = n, y = fct_reorder(token, n))) + geom_col()
+
+  
+```
+The most common non-stop word is still patient. The next most common is "left," followed by "history," "2", "1", and "normal." We can remove numbers since they don't give us too much insight.
+
+```{r}
+token_filtered = all_token %>% filter(is.na(as.numeric(token))) %>% anti_join(stop_words, by = c("token" = "word"))
+
+token_filtered %>% top_n(20) %>% ggplot(aes(x = n, y = fct_reorder(token, n))) + geom_col()
+
+```
+
+Now, there are no numbers in the tokens column. It gives us more insight into what the text is about. Namely, we can see "history," "procedure," and "pain" in the list, which tells us that assessments and measurements are being performed and taken for the patients.
+
+## Step 4: Redo Part 2 but with Bigrams and Trigrams
+```{r}
+bigrams = mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>% count(ngram, sort=T)
+bigrams %>% top_n(20) %>% ggplot(aes(x = n, y = fct_reorder(ngram, n))) + geom_col()
+
+
+```
+The most common bigram is "the patient" followed by "of the" and "in the." This doesn't give us too much information since again, there are many stop words. Now let's look at trigrams.
+
+```{r}
+trigrams = mtsamples %>% unnest_ngrams(ngram, transcription, n = 3) %>% count(ngram, sort=T)
+trigrams %>% top_n(20) %>% ggplot(aes(x = n, y = fct_reorder(ngram, n))) + geom_col()
+
+```
+The most common trigram is "the patient was," followed by "the patient is" and "as well as." This gives us more information regarding procedures because of "the operating room," "prepped and draped," and "no evidence of." We can see that there are procedures and operations being performed, as well as a few insights on how patients tolerated the treatments. 
+
+## Step 5: Words coming before and after "patient"
+```{r}
+mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>%
+  separate(ngram, into = c("word1", "word2"), sep = " ") %>%
+  select(word1, word2) %>% filter(word1 == "patient") %>% count(word2, sort = T)
+```
+
+The most common word coming after patient is "was." The second most common word coming after patient is "is." It is important to note that the fourth most common word after patient is "tolerated," which tells us that many patients did not react badly to any treatments.
+
+```{r}
+mtsamples %>% unnest_ngrams(ngram, transcription, n = 2) %>%
+  separate(ngram, into = c("word1", "word2"), sep = " ") %>%
+  select(word1, word2) %>% filter(word2 == "patient") %>% count(word1, sort = T)
+
+```
+
+The most common word preceding "patient" by far is "the." History is also very common, which makes sense since physicians need to take patient histories. 
+
+## Step 6 and Step 7: Words Used Most per Specialty
+```{r}
+mtsamples %>% unnest_tokens(token, transcription) %>% anti_join(stop_words, by = c("token" = "word")) %>% filter(is.na(as.numeric(token))) %>% group_by(medical_specialty) %>% count(token, sort = T) %>% slice(1:10)
+
+```
+
+The most common word in many specialties is still "patient." However, a lot of specialties have "pain" and "history" in common with each other. There are specialty-specific words as well; in dentistry, "tooth" and "teeth" appear a lot, and "skin" appears a lot in dermatology. 
+
+```{r}
+mtsamples %>% unnest_tokens(token, transcription) %>% anti_join(stop_words, by = c("token" = "word")) %>% filter(is.na(as.numeric(token))) %>% group_by(medical_specialty) %>% count(token, sort = T) %>% slice(1:5)
+```
+
+The 5 most used words give us insight into the specialties. For example, "artery" and "coronary" appear many times in cardiovascular/pulmonary. "Breast," "skin," and "incision" appear a lot in cosmetic/plastic surgery, so we can deduce that breast procedures are the most common among these transcriptions. "Weight," "food," and "carbohydrate" appear frequently in Diets and Nutrition. "Thyroid" appears the most commonly in endocrinology, suggesting that the thyroid is the main concern of endocrinology patients in this dataset. 
