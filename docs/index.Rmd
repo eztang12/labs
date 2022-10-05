@@ -1,0 +1,30 @@
+---
+title: "Lab 7"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(stringr)
+library(httr)
+library(xml2)
+```
+
+## Question 1
+
+```{r}
+setwd("~/pm566/labs/docs/")
+website <- xml2::read_html("https://pubmed.ncbi.nlm.nih.gov/?term=sars-cov-2")
+
+counts <- xml2::xml_find_first(website, "/html/body/main/div[9]/div[2]/div[2]/div[1]/div[1]/span")
+
+counts <- as.character(counts)
+
+stringr::str_extract(counts, "([0-9]+[.,]*)+")
+
+```
