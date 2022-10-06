@@ -373,8 +373,8 @@ pre code {
 <pre class="r"><code>library(stringr)
 library(httr)
 library(xml2)</code></pre>
-<div id="question-1" class="section level2">
-<h2>Question 1</h2>
+<div id="question-1-how-many-sars-cov-2-papers" class="section level2">
+<h2>Question 1: How many SARS-COV-2 papers?</h2>
 <pre class="r"><code>setwd(&quot;~/pm566/labs/docs/&quot;)
 website &lt;- xml2::read_html(&quot;https://pubmed.ncbi.nlm.nih.gov/?term=sars-cov-2&quot;)
 
@@ -384,6 +384,489 @@ counts &lt;- as.character(counts)
 
 stringr::str_extract(counts, &quot;([0-9]+[.,]*)+&quot;)</code></pre>
 <pre><code>## [1] &quot;179,021&quot;</code></pre>
+</div>
+<div id="question-2-papers-on-covid-19-and-hawaii" class="section level2">
+<h2>Question 2: Papers on COVID-19 and Hawaii</h2>
+<pre class="r"><code>query_ids &lt;- GET(
+  url = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi&quot;,
+  query = list(
+    term = &quot;covid19 hawaii&quot;,
+    retmax = 1000)
+)
+
+# Extracting the content of the response of GET
+ids &lt;- httr::content(query_ids)</code></pre>
+</div>
+<div id="question-3-get-details-on-the-articles" class="section level2">
+<h2>Question 3: Get details on the articles</h2>
+<pre class="r"><code>ids &lt;- as.character(ids)
+ids &lt;- stringr::str_extract_all(ids, &quot;&lt;Id&gt;[0-9]*&lt;/Id&gt;&quot;)[[1]]
+ids &lt;- stringr::str_remove_all(ids, &quot;&lt;Id&gt;|&lt;/Id&gt;&quot;)
+
+publications &lt;- GET(
+  url   = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi&quot;,
+  query = list(
+    db = &quot;pubmed&quot;,
+    id = str_c(ids, collapse = &quot;,&quot;),
+    retmax = 1000,
+    rettype = &quot;abstract&quot;
+    )
+)
+
+publications &lt;- httr::content(publications)
+publications_txt &lt;- as.character(publications)</code></pre>
+</div>
+<div id="question-4-distribution-of-universities-schools-and-departments" class="section level2">
+<h2>Question 4: Distribution of universities, schools, and
+departments</h2>
+<pre class="r"><code>institution &lt;- str_extract_all(
+  publications_txt,
+  &quot;University of\\s+[[:alpha:]]+|[[:alpha:]]+\\s+Institute of\\s+[[:alpha:]]+&quot;
+  ) 
+institution &lt;- unlist(institution)
+table(institution)</code></pre>
+<pre><code>## institution
+##              Army Institute of Research        Australian Institute of Tropical 
+##                                       1                                      15 
+##       Beijing Institute of Pharmacology              Berlin Institute of Health 
+##                                       2                                       4 
+##              Broad Institute of Harvard               Cancer Institute of Emory 
+##                                       2                                       2 
+##                 Cancer Institute of New           Genome Institute of Singapore 
+##                                       1                                       1 
+##    Graduate Institute of Rehabilitation         Health Institute of Montpellier 
+##                                       3                                       1 
+##          Heidelberg Institute of Global                   i Institute of Marine 
+##                                       1                                       2 
+##            Indian Institute of Tropical            Leeds Institute of Rheumatic 
+##                                       5                                       2 
+##   Massachusetts Institute of Technology            Mayo Institute of Technology 
+##                                       1                                       1 
+##          Medanta Institute of Education Mediterranean Institute of Oceanography 
+##                                       1                                       1 
+##                 MGM Institute of Health       Monterrey Institute of Technology 
+##                                       1                                       1 
+##           National Institute of Allergy        National Institute of Biomedical 
+##                                       3                                       1 
+##     National Institute of Biostructures             National Institute of Child 
+##                                       1                                       2 
+##     National Institute of Environmental           National Institute of General 
+##                                       3                                       1 
+##            National Institute of Public        National Institute of Technology 
+##                                       1                                       1 
+##        Nordic Institute of Chiropractic      Prophylactic Institute of Southern 
+##                                       1                                       2 
+##               Research Institute of New      Research Institute of Tuberculosis 
+##                                       4                                       2 
+##             the Institute of Biomedical               the Institute of Medicine 
+##                                       1                                       1 
+##                   University of Alberta                   University of Applied 
+##                                       2                                       3 
+##                   University of Arizona                  University of Arkansas 
+##                                       5                                      25 
+##                     University of Basel                     University of Benin 
+##                                       8                                       1 
+##                  University of Botswana                  University of Bradford 
+##                                       1                                       1 
+##                   University of Bristol                   University of British 
+##                                       4                                       4 
+##                   University of Calgary                University of California 
+##                                      23                                      78 
+##                  University of Campinas                   University of Chicago 
+##                                       3                                      13 
+##                   University of Chinese                University of Cincinnati 
+##                                       1                                      11 
+##                  University of Colorado               University of Connecticut 
+##                                       4                                       3 
+##                University of Copenhagen                   University of Córdoba 
+##                                       7                                       1 
+##                    University of Dayton                 University of Education 
+##                                       1                                       1 
+##                    University of Exeter                   University of Florida 
+##                                       1                                       9 
+##                   University of Georgia                     University of Ghana 
+##                                       2                                       1 
+##                   University of Granada                     University of Haifa 
+##                                       2                                       1 
+##                     University of Hawai                    University of Hawaii 
+##                                     258                                     350 
+##                    University of Hawaiï                    University of Hawaìi 
+##                                       2                                       1 
+##                    University of Health                      University of Hong 
+##                                      11                                       3 
+##                  University of Honolulu                  University of Illinois 
+##                                       6                                       6 
+##               University of Information                      University of Iowa 
+##                                       2                                       4 
+##                      University of Juiz                    University of Kansas 
+##                                       4                                       4 
+##                  University of Kentucky                  University of Lausanne 
+##                                       1                                       1 
+##                     University of Leeds                University of Louisville 
+##                                       2                                       1 
+##                     University of Maine                    University of Malaya 
+##                                       2                                       2 
+##                  University of Maryland             University of Massachusetts 
+##                                      11                                      22 
+##                   University of Medical                  University of Medicine 
+##                                       2                                       4 
+##                 University of Melbourne                     University of Miami 
+##                                       1                                       2 
+##                  University of Michigan                 University of Minnesota 
+##                                       8                                       1 
+##                  University of Missouri                   University of Montana 
+##                                       2                                       3 
+##                     University of Mount                    University of Murcia 
+##                                       1                                       1 
+##                  University of Nebraska                    University of Nevada 
+##                                       5                                       3 
+##                       University of New                     University of North 
+##                                      14                                       8 
+##                      University of Ohio                   University of Ontario 
+##                                       1                                       1 
+##                      University of Oslo                    University of Oxford 
+##                                       6                                       9 
+##                   University of Palermo                     University of Paris 
+##                                       1                                       1 
+##              University of Pennsylvania                University of Pittsburgh 
+##                                      68                                      13 
+##                     University of Porto                    University of Puerto 
+##                                       2                                       3 
+##                University of Queensland                     University of Rhode 
+##                                       2                                       3 
+##                  University of Richmond                       University of Rio 
+##                                       1                                       1 
+##                 University of Rochester                       University of Sao 
+##                                       4                                       2 
+##                   University of Science                   University of Sergipe 
+##                                      34                                       1 
+##                 University of Singapore                     University of South 
+##                                       1                                       4 
+##                  University of Southern                    University of Sydney 
+##                                      24                                       1 
+##                University of Technology                     University of Texas 
+##                                       5                                       9 
+##                       University of the                   University of Toronto 
+##                                     166                                      15 
+##                    University of Toulon                  University of Tübingen 
+##                                       1                                       3 
+##                      University of Utah                University of Washington 
+##                                       8                                       9 
+##                      University of West                   University of Western 
+##                                       1                                       1 
+##                 University of Wisconsin                   University of Wyoming 
+##                                       8                                       1 
+##                      University of York 
+##                                       1</code></pre>
+<pre class="r"><code>schools_and_deps &lt;- str_extract_all(
+  publications_txt,
+  &quot;School of\\s+[[:alpha:]]+|Department of\\s+[[:alpha:]]+&quot;
+  )
+schools_and_deps = unlist(schools_and_deps)
+table(schools_and_deps)</code></pre>
+<pre><code>## schools_and_deps
+##         Department of Ageing    Department of Agriculture 
+##                            1                            2 
+##        Department of Anatomy     Department of Anesthesia 
+##                           16                            3 
+##  Department of Anesthesilogy Department of Anesthesiology 
+##                            1                           15 
+##   Department of Anthropology        Department of Applied 
+##                            3                            4 
+##    Department of Atmospheric     Department of Behavioral 
+##                            3                            3 
+##   Department of Biochemistry     Department of Biological 
+##                            1                           12 
+##        Department of Biology     Department of Biomedical 
+##                           30                            3 
+##    Department of Biosciences  Department of Biostatistics 
+##                            4                           18 
+##         Department of Botany     Department of Cardiology 
+##                            1                            1 
+## Department of Cardiovascular           Department of Cell 
+##                            1                            4 
+##      Department of Chemistry          Department of Civil 
+##                            2                           12 
+##       Department of Clinical       Department of Commerce 
+##                           11                            1 
+##  Department of Communication  Department of Communicology 
+##                            2                            2 
+##      Department of Community  Department of Computational 
+##                            4                            1 
+##       Department of Critical        Department of Defense 
+##                           15                            7 
+##      Department of Dentistry    Department of Dermatology 
+##                            1                           27 
+##        Department of Ecology      Department of Economics 
+##                            4                           16 
+##      Department of Education      Department of Emergency 
+##                            8                           15 
+##         Department of Energy        Department of English 
+##                            1                            2 
+##  Department of Environmental   Department of Epidemiology 
+##                           10                           26 
+##   Department of Experimental         Department of Family 
+##                            1                           16 
+##           Department of Fish      Department of Fisheries 
+##                            1                            1 
+##       Department of Forestry        Department of General 
+##                            6                            7 
+##        Department of Genetic      Department of Geography 
+##                            1                            8 
+##    Department of Geosciences         Department of Health 
+##                            4                           93 
+##     Department of Hematology          Department of Human 
+##                            3                            1 
+##     Department of Immunology     Department of Infectious 
+##                            1                           28 
+##    Department of Information         Department of Inland 
+##                            2                            1 
+##      Department of Intensive       Department of Internal 
+##                            3                           85 
+##  Department of International    Department of Kinesiology 
+##                            2                            2 
+##     Department of Laboratory    Department of Mathematics 
+##                            3                           18 
+##     Department of Mechanical        Department of Medical 
+##                            8                            7 
+##       Department of Medicine     Department of Metabolism 
+##                          178                            1 
+##   Department of Microbiology      Department of Molecular 
+##                           10                            2 
+##         Department of Native        Department of Natural 
+##                            5                           13 
+##     Department of Nephrology   Department of Neurological 
+##                            5                           12 
+##      Department of Neurology   Department of Neurosurgery 
+##                            3                            1 
+##        Department of Nursing      Department of Nutrition 
+##                            1                            7 
+##             Department of OB     Department of Obstetrics 
+##                            5                           20 
+##   Department of Occupational  Department of Ophthalmology 
+##                            2                            1 
+##     Department of Orthopedic Department of Otolaryngology 
+##                            5                            4 
+##     Department of Paediatric  Department of Parliamentary 
+##                            1                            1 
+##      Department of Pathology      Department of Pediatric 
+##                           17                            2 
+##     Department of Pediatrics Department of Pharmaceutical 
+##                           41                            1 
+##   Department of Pharmacology       Department of Pharmacy 
+##                            2                            2 
+##       Department of Physical     Department of Physiology 
+##                            5                           11 
+##  Department of Physiotherapy          Department of Plant 
+##                            1                            1 
+##     Department of Population     Department of Prevention 
+##                           16                            1 
+##     Department of Preventive     Department of Psychiatry 
+##                          129                           34 
+##     Department of Psychology         Department of Public 
+##                            8                           11 
+##      Department of Pulmonary   Department of Quantitative 
+##                            1                           25 
+##   Department of Radiotherapy Department of Rehabilitation 
+##                            1                            6 
+##       Department of Research   Department of Rheumatology 
+##                            5                            7 
+##        Department of Smoking         Department of Social 
+##                            8                            6 
+##      Department of Sociology         Department of Sports 
+##                            8                            1 
+##     Department of Statistics        Department of Surgery 
+##                            2                           40 
+##       Department of Taxation            Department of the 
+##                            1                            1 
+##        Department of Traffic  Department of Translational 
+##                            1                            1 
+##       Department of Tropical           Department of Twin 
+##                           53                            4 
+##        Department of Urology       Department of Veterans 
+##                            1                           15 
+##     Department of Veterinary       Department of Wildlife 
+##                            2                            5 
+##        Department of Zoology          School of Aerospace 
+##                            1                            5 
+##        School of Agriculture            School of Applied 
+##                            1                            1 
+##            School of Aquatic         School of Biological 
+##                            1                            4 
+##         School of Biomedical              School of Brown 
+##                            3                            2 
+##           School of Business           School of Chemical 
+##                            4                            1 
+##          School of Education         School of Electronic 
+##                            2                            1 
+##             School of Energy      School of Environmental 
+##                            2                            2 
+##       School of Epidemiology             School of Forest 
+##                            6                            1 
+##           School of Forestry             School of Health 
+##                            4                           14 
+##            School of Hygiene         School of Immunology 
+##                            1                            1 
+##                School of Law               School of Life 
+##                            1                            3 
+##           School of Medicine            School of Natural 
+##                          588                            4 
+##            School of Nursing              School of Ocean 
+##                           70                            1 
+##           School of Pharmacy           School of Physical 
+##                            1                            6 
+##      School of Physiotherapy         School of Population 
+##                            1                            2 
+##             School of Public           School of Sciences 
+##                           92                            4 
+##             School of Social     School of Transportation 
+##                           55                            1 
+##         School of Veterinary 
+##                            1</code></pre>
+</div>
+<div id="question-5-form-a-database" class="section level2">
+<h2>Question 5: Form a Database</h2>
+<pre class="r"><code>pub_char_list &lt;- xml2::xml_children(publications)
+pub_char_list &lt;- sapply(pub_char_list, as.character)</code></pre>
+<p>Extract abstract and title</p>
+<pre class="r"><code>abstracts &lt;- str_extract(pub_char_list, &quot;&lt;AbstractText&gt;.*&lt;/AbstractText&gt;&quot;)
+abstracts &lt;- str_replace_all(abstracts, &quot;&lt;/?[[:alpha:]]+&gt;&quot;, &quot;&quot;)
+
+titles &lt;- str_extract(pub_char_list, &quot;&lt;ArticleTitle&gt;.*&lt;/ArticleTitle&gt;&quot;)
+titles &lt;- str_replace_all(titles, &quot;&lt;/?[[:alpha:]]+&gt;&quot;, &quot;&quot;)</code></pre>
+<p>Finally, we can make a nice table for these papers.</p>
+<pre class="r"><code>database &lt;- data.frame(
+  PubMedId = ids,
+  Title    = titles,
+  Abstract = abstracts
+) 
+
+knitr::kable(database[1:8,], caption = &quot;Some papers about Covid19 and Hawaii&quot;)</code></pre>
+<table>
+<caption>Some papers about Covid19 and Hawaii</caption>
+<colgroup>
+<col width="0%" />
+<col width="6%" />
+<col width="93%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">PubMedId</th>
+<th align="left">Title</th>
+<th align="left">Abstract</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">36186620</td>
+<td align="left">Racial/Ethnic Disparities in Getting COVID-19 Vaccine:
+Do Age, Gender, and Education Matter?</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">36173983</td>
+<td align="left">Hydroxychloroquine/chloroquine for the treatment of
+hospitalized patients with COVID-19: An individual participant data
+meta-analysis.</td>
+<td align="left">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">36146513</td>
+<td align="left">Dynamics of Trust and Consumption of COVID-19
+Information Implicate a Mechanism for COVID-19 Vaccine and Booster
+Uptake.</td>
+<td align="left">Vaccine hesitancy remains a significant barrier to
+achieving herd immunity and preventing the further spread of COVID-19.
+Understanding contributors to vaccine hesitancy and how they change over
+time may improve COVID-19 mitigation strategies and public health
+policies. To date, no mechanism explains how trust in and consumption of
+different sources of information affect vaccine uptake. A total of 1594
+adults enrolled in our COVID-19 testing program completed standardized
+surveys on demographics, vaccination status, use, reliance, and trust in
+sources of COVID-19 information, from September to October 2021, during
+the COVID-19 Delta wave. Of those, 802 individuals (50.3%) completed a
+follow-up survey, from January to February 2022, during the
+Omicron-wave. Regression analyses were performed to understand
+contributors to vaccine and booster uptake over time. Individuals
+vaccinated within two months of eligibility (early vaccinees) tended to
+have more years of schooling, with greater trust in and consumption of
+official sources of COVID-19 information, compared to those who waited
+3-6 months (late vaccinees), or those who remained unvaccinated at 6
+months post-eligibility (non-vaccinees). Most (70.1%) early vaccinees
+took the booster shot, compared to only 30.5% of late vaccinees, with
+the latter group gaining trust and consumption of official information
+after four months. These data provide the foundation for a mechanism
+based on the level of trust in and consumption of official information
+sources, where those who increased their level of trust in and
+consumption of official information sources were more likely to receive
+a booster. This study shows that social factors, including education and
+individual-level degree of trust in (and consumption of) sources of
+COVID-19 information, interact and change over time to be associated
+with vaccine and booster uptakes. These results are critical for the
+development of effective public health policies and offer insights into
+hesitancy over the course of the COVID-19 vaccine and booster
+rollout.</td>
+</tr>
+<tr class="even">
+<td align="left">36128780</td>
+<td align="left">Effects of the COVID 19 Pandemic on School Nurses’
+Resiliency and Ability to Cope: A Mixed Methods Study in the State of
+Hawaii.</td>
+<td align="left">This mixed-method study examined school nurses’
+experiences during the Coronavirus Disease 2019 pandemic related to role
+change, psychological feelings, and coping/resiliency in the State of
+Hawaii. A total of 30 school nurses completed a Brief Resilience Coping
+Scale plus a series of open-ended questions in January 2022. On the
+coping scale, over 40% of participants scored high, 52% scored medium,
+and 7% scored a low resilient/coping level. We did not identify any
+association between coping level and participant characteristics. Three
+qualitative themes emerged: 1) school nurses experience chronic negative
+emotions related to the pandemic, 2) school nurses demonstrate
+attributes of resilience, and 3) school nurses utilize positive coping
+techniques. The pandemic created significant stresses and negative
+emotions among school nurses. Yet, school nurses reported effective
+coping strategies and demonstrated strength/resilience. Support and open
+communication between school nurses, their employers, and other
+school-based stakeholders is needed to provide continued support for
+school nurses.</td>
+</tr>
+<tr class="odd">
+<td align="left">36126272</td>
+<td align="left">Veterans’ Use of Telehealth for Veterans Health
+Administration Community Care Urgent Care During the Early COVID-19
+Pandemic.</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">36108254</td>
+<td align="left">Vaccine-Associated Shifts in SARS-CoV-2 Infectivity
+Among the Native Hawaiian and Other Pacific Islander Population in
+Hawaii.</td>
+<td align="left">Native Hawaiians and other Pacific Islanders (NHPIs)
+across the country have experienced significant disparities because of
+the COVID-19 pandemic. The Pacific Alliance Against COVID-19 used a
+community-based participatory approach involving academic and community
+partners to expand sustainable COVID-19 testing capacity and mitigate
+the severe consequences among NHPI communities in Hawaii. We describe
+the approach of this one-year study, some of the results, and how the
+data are being used to inform next steps for the communities. Clinical
+Trials.gov identifier: NCT04766333. (Am J Public Health. Published
+online ahead of print September 15, 2022:e1-e4. <a href="https://doi.org/10.2105/AJPH.2022.306973" class="uri">https://doi.org/10.2105/AJPH.2022.306973</a>).</td>
+</tr>
+<tr class="odd">
+<td align="left">36091468</td>
+<td align="left">Resilience of breadfruit agro-ecosystems in Hawai’i
+during the COVID-19 pandemic.</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">36081413</td>
+<td align="left">Effect of a Condensed NBA Season on Injury Risk: An
+Analysis of the 2020 Season and Player Safety.</td>
+<td align="left">NA</td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
