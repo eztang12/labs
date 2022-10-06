@@ -110,5 +110,3 @@ database <- data.frame(
 knitr::kable(database[1:8,], caption = "Some papers about Covid19 and Hawaii")
 ```
 
-
-
