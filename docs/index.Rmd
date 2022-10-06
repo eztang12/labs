@@ -15,7 +15,7 @@ library(httr)
 library(xml2)
 ```
 
-## Question 1
+## Question 1: How many SARS-COV-2 papers?
 
 ```{r}
 setwd("~/pm566/labs/docs/")
@@ -28,3 +28,88 @@ counts <- as.character(counts)
 stringr::str_extract(counts, "([0-9]+[.,]*)+")
 
 ```
+## Question 2: Papers on COVID-19 and Hawaii
+
+```{r}
+query_ids <- GET(
+  url   = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+  query = list(db = "pubmed", term = "covid19 hawaii", retmax = 1000)
+)
+
+# Extracting the content of the response of GET
+ids <- httr::content(query_ids)
+
+```
+
+## Question 3: Get details on the articles
+
+```{r}
+ids = as.character(ids)
+ids <- stringr::str_extract_all(ids, "<Id>[[:digit:]]+</Id>")[[1]]
+ids = stringr::str_remove(ids, "</?Id>")
+
+publications <- GET(
+  url   = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+  query = list(
+    db  = "pubmed",
+    id  = paste(ids,collapse = ","),
+  retmax = 1000,
+  rettype = "abstract"
+    )
+)
+publications <- httr::content(publications)
+publications_txt <- as.character(publications)
+
+```
+
+## Question 4: Distribution of universities, schools, and departments
+
+```{r}
+institution <- str_extract_all(
+  publications_txt,
+  "(University of|Institute of)\\s[^,\\d]*(?=,|\\d)"
+  ) 
+institution <- unlist(institution)
+table(institution)
+
+schools_and_deps <- str_extract_all(
+  publications_txt,
+  "(School of|Department of)\\s[^,\\d]*(?=,|\\d)"
+  )
+schools_and_deps = unlist(schools_and_deps)
+table(schools_and_deps)
+
+```
+
+## Question 5: Form a Database
+```{r}
+pub_char_list <- xml2::xml_children(publications)
+pub_char_list <- sapply(pub_char_list, as.character)
+```
+
+Extract abstract
+```{r}
+abstracts <- str_extract(pub_char_list, "<Abstract>[[:print:][:space:]]+</Abstract>")
+abstracts <- str_remove_all(abstracts, "</?[[:alnum:]- =\"]+>") 
+abstracts <- str_replace_all(abstracts, "[[:space:]]+"," ")
+abstracts[[1]]
+```
+
+Extract title
+```{r}
+titles <- str_extract(pub_char_list, "<ArticleTitle>[[:print:][:space:]]+</ArticleTitle>")
+titles <- str_remove_all(titles, "</?[[:alnum:]- =\"]+>")
+titles[[1]]
+```
+Finally, we can make a nice table for these papers.
+```{r}
+database <- data.frame(
+  PubMedId = ids,
+  Title    = titles,
+  Abstract = abstracts
+)
+knitr::kable(database[1:8,], caption = "Some papers about Covid19 and Hawaii")
+```
+
+
+
