@@ -1,0 +1,121 @@
+---
+title: "PM566 Lab 9"
+author: "Echo Tang"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    html_preview: false
+  html_document: default
+  pdf_document: default
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+Three problems that can be solved by parallel computing are:
+1. Cross-validation for testing machine learning models (i.e. structure predictions for macromolecules)
+2. Resampling-based testing for very large datasets for hypothesis testing
+3. Text mining for large datasets
+
+## Problem 2
+### Part 1
+```{r}
+library(parallel)
+library(microbenchmark)
+
+fun1 <- function(n = 100, k = 4, lambda = 4) {
+  x <- NULL
+  
+  for (i in 1:n)
+    x <- rbind(x, rpois(k, lambda))
+  
+  return(x)
+}
+
+fun1alt <- function(n = 100, k = 4, lambda = 4) {
+  x = matrix(rpois(n*k, lambda), ncol = k)
+  return(x)
+
+}
+
+microbenchmark::microbenchmark(
+  fun1(),
+  fun1alt()
+)
+
+```
+
+### Part 2
+```{r}
+set.seed(1234)
+M = matrix(runif(12), ncol = 4)
+
+# Find each column's max value
+fun2 <- function(x) {
+  apply(x, 2, max)
+}
+fun2(M)
+
+fun2alt <- function(x) {
+  idx = max.col(t(x))
+  x[cbind(idx,1:4)]
+}
+fun2alt(M)
+
+# Benchmarking
+microbenchmark::microbenchmark(
+  fun2(M),
+  fun2alt(M)
+)
+```
+
+## Problem 3
+### Part 1
+```{r}
+my_boot <- function(dat, stat, R, ncpus = 1L) {
+  
+  n <- nrow(dat)
+  idx <- matrix(sample.int(n, n*R, TRUE), nrow=n, ncol=R)
+ 
+  # Making the cluster using `ncpus`
+  cl = makePSOCKcluster(ncpus)
+  clusterSetRNGStream(cl, 123)
+  clusterExport(cl, c("stat", "dat", "idx"), envir = environment())
+  
+  ans <- parLapply(cl, seq_len(R), function(i) {
+    stat(dat[idx[,i], , drop=FALSE])
+  })
+  
+  # Coercing the list into a matrix
+  ans <- do.call(rbind, ans)
+  
+  # STEP 4: GOES HERE
+  
+  ans
+  
+}
+
+```
+
+### Part 2
+```{r}
+my_stat <- function(d) coef(lm(y ~ x, data=d))
+
+set.seed(1)
+n <- 500; R <- 1e4
+
+x <- cbind(rnorm(n)); y <- x*5 + rnorm(n)
+
+ans0 <- confint(lm(y~x))
+ans1 <- my_boot(dat = data.frame(x, y), my_stat, R = R, ncpus = 2L)
+t(apply(ans1, 2, quantile, c(.025,.975)))
+ans0
+
+system.time(my_boot(dat = data.frame(x, y), my_stat, R = 4000, ncpus = 1L))
+system.time(my_boot(dat = data.frame(x, y), my_stat, R = 4000, ncpus = 2L))
+```
+
+
