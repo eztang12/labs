@@ -57,7 +57,7 @@ ORDER BY last_name
 ## Exercise 3
 
 ```{sql, connection = con}
-SELECT DISTINCT customer_id
+SELECT DISTINCT customer_id, rental_date
 FROM rental
 WHERE date(rental_date) = '2005-07-05'
 
@@ -93,7 +93,7 @@ WHERE amount > 5 AND amount < 8
 ## Exercise 5
 
 ```{sql, connection = con}
-SELECT payment_id, amount
+SELECT payment_id, amount, last_name, b.customer_id
 FROM payment AS a
   INNER JOIN customer AS b
   ON a.customer_id = b.customer_id
@@ -110,7 +110,7 @@ FROM rental
 
 ### Exercise 6.2
 ```{sql, connection = con}
-SELECT customer_id, COUNT(customer_id)
+SELECT customer_id, COUNT(customer_id) as count
 FROM rental
 GROUP BY customer_id
 
@@ -119,10 +119,10 @@ GROUP BY customer_id
 
 ### Exercise 6.3
 ```{sql, connection = con}
-SELECT customer_id, COUNT(customer_id)
+SELECT customer_id, COUNT(customer_id) as count
 FROM rental
 GROUP BY customer_id
-ORDER BY COUNT(customer_id) DESC
+ORDER BY count DESC
 ```
 
 ### Exercise 6.4
@@ -154,10 +154,14 @@ GROUP BY customer_id
 
 ### Exercise 7.3
 ```{sql, connection = con}
-SELECT customer_id, AVG(amount) as avg, SUM(amount) as sum, MIN(amount) as min, MAX(amount) as max
+SELECT customer_id, AVG(amount) as avg, SUM(amount) as sum, MIN(amount) as min, MAX(amount) as max, COUNT(customer_id) as n
 FROM payment
 GROUP BY customer_id
-HAVING COUNT(customer_id) > 5
+HAVING n > 5
 
+```
+
+```{r}
+dbDisconnect(con)
 ```
 
