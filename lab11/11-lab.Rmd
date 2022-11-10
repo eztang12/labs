@@ -397,7 +397,7 @@ set_map_details <- list(
 )
 
 # Make sure both maps are on the same color scale
-shadeLimit <- 125
+shadeLimit <- 35
 
 # Create the map
 fig <- plot_geo(cv_per100, locationmode = 'USA-states') %>% 
